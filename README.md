@@ -26,6 +26,7 @@ docker compose up -d
 ```
 
 ### 3) Start Ollama
+First download and install it (https://ollama.com/download)
 ```bash
 ollama serve
 ollama pull mistral-small3.2
