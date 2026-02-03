@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant User
+    participant App as Python App
+    participant Mem0
+    participant CPU as CPU Embedder
+    participant Qdrant
+    participant Ollama as Ollama Llama3
+
+    Note over User, Ollama: Step 1 Retrieval and Response
+    User->>App: Hello I am John
+    App->>Mem0: Search(Hello I am John)
+    Mem0->>CPU: Vectorize Input
+    CPU-->>Mem0: Vector 768d
+    Mem0->>Qdrant: Query Vector Store
+    Qdrant-->>Mem0: Return Relevant Past Facts
+    Mem0-->>App: Context List
+    
+    App->>Ollama: Generate Response(Context + Input)
+    Ollama-->>App: Hello John nice to meet you
+    App->>User: Print Response
+
+    Note over User, Ollama: Step 2 Memory Consolidation
+    App->>Mem0: Add(Hello I am John)
+    Mem0->>Ollama: Extract Facts from Input
+    Ollama-->>Mem0: Fact User name is John
+    Mem0->>CPU: Vectorize Fact
+    Mem0->>Qdrant: Upsert Vector
