@@ -1,6 +1,7 @@
 mem0ai[graph]==1.0.3
 nicegui==3.6.1
 openai>=1.0.0
+pydantic>=2.0.0
 sentence-transformers==5.2.2
 torch
 qdrant-client==1.16.2

@@ -1,27 +1,33 @@
 sequenceDiagram
     participant User
-    participant App as Python App
+    participant UI as NiceGUI UI
     participant Mem0
-    participant CPU as CPU Embedder
+    participant Embedder as HF Embedder (CPU)
     participant Qdrant
-    participant Ollama as Ollama Llama3
+    participant Neo4j
+    participant Ollama as Ollama (OpenAI API)
 
-    Note over User, Ollama: Step 1 Retrieval and Response
-    User->>App: Hello I am John
-    App->>Mem0: Search(Hello I am John)
-    Mem0->>CPU: Vectorize Input
-    CPU-->>Mem0: Vector 768d
-    Mem0->>Qdrant: Query Vector Store
-    Qdrant-->>Mem0: Return Relevant Past Facts
-    Mem0-->>App: Context List
-    
-    App->>Ollama: Generate Response(Context + Input)
-    Ollama-->>App: Hello John nice to meet you
-    App->>User: Print Response
+    Note over User,Ollama: Request and Response
+    User->>UI: Send message
+    UI->>Mem0: search(text, user_id)
+    Mem0->>Embedder: embed(query)
+    Embedder-->>Mem0: vector
+    Mem0->>Qdrant: similarity search
+    Qdrant-->>Mem0: memories
+    Mem0->>Neo4j: fetch relations
+    Neo4j-->>Mem0: relations
+    Mem0-->>UI: results + relations
 
-    Note over User, Ollama: Step 2 Memory Consolidation
-    App->>Mem0: Add(Hello I am John)
-    Mem0->>Ollama: Extract Facts from Input
-    Ollama-->>Mem0: Fact User name is John
-    Mem0->>CPU: Vectorize Fact
-    Mem0->>Qdrant: Upsert Vector
+    UI->>Ollama: Responses API (instructions + input + JSON schema)
+    Ollama-->>UI: output_text
+    UI->>User: Render response
+
+    Note over User,Ollama: Memory Update
+    UI->>Mem0: add(text, user_id)
+    Mem0->>Ollama: extract facts and relations
+    Ollama-->>Mem0: memory + graph directives
+    Mem0->>Embedder: embed(memory)
+    Embedder-->>Mem0: vector
+    Mem0->>Qdrant: upsert memory
+    Mem0->>Neo4j: write relations
+    Mem0-->>UI: actions + graph actions
