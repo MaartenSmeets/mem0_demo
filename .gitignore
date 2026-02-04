@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+neo4j_data/
+neo4j_import/
+neo4j_logs/
+neo4j_plugins/
+qdrant_storage/
