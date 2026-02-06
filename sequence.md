@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
     participant User
     participant UI as NiceGUI UI
@@ -11,11 +12,16 @@ sequenceDiagram
     User->>UI: Send message
     UI->>Mem0: search(text, user_id)
     Mem0->>Embedder: embed(query)
-    Embedder-->>Mem0: vector
+    Embedder-->>Mem0: query vector
     Mem0->>Qdrant: similarity search
     Qdrant-->>Mem0: memories
-    Mem0->>Neo4j: fetch relations
-    Neo4j-->>Mem0: relations
+    Mem0->>Ollama: extract entities from query
+    Ollama-->>Mem0: entities
+    Mem0->>Embedder: embed(entity names)
+    Embedder-->>Mem0: entity vectors
+    Mem0->>Neo4j: vector similarity (n.embedding, threshold)
+    Neo4j-->>Mem0: relations + similarity
+    Mem0->>Mem0: BM25 rerank relations vs query
     Mem0-->>UI: results + relations
 
     UI->>Ollama: Responses API (instructions + input + JSON schema)
@@ -26,8 +32,11 @@ sequenceDiagram
     UI->>Mem0: add(text, user_id)
     Mem0->>Ollama: extract facts and relations
     Ollama-->>Mem0: memory + graph directives
-    Mem0->>Embedder: embed(memory)
-    Embedder-->>Mem0: vector
+    Mem0->>Embedder: embed(memory text)
+    Embedder-->>Mem0: memory vector
     Mem0->>Qdrant: upsert memory
-    Mem0->>Neo4j: write relations
+    Mem0->>Embedder: embed entity names
+    Embedder-->>Mem0: entity vectors
+    Mem0->>Neo4j: merge nodes + write relations
     Mem0-->>UI: actions + graph actions
+``` 

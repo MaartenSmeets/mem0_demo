@@ -10,6 +10,12 @@ A local-first chat UI that uses **Mem0** for long-term memory, **Qdrant** for ve
 - Inspect Mem0 retrievals, add/update/delete actions, and graph relations per request.
 - Clear memories for the current user from the UI.
 
+## Mem0 Behavior In This App
+- Retrieval: each user message calls `mem.search`. The vector store uses embeddings of the full query to run a similarity search in Qdrant.
+- Graph retrieval: Mem0 Graph uses the LLM to extract entities from the query, embeds each entity string, and performs a Neo4j vector similarity search (`n.embedding` cosine). Results are filtered by the graph threshold (default `0.7`) and then BM25 re-ranked against the query tokens before returning the top relations.
+- Update: after the assistant response is rendered, the app calls `mem.add` with the user message only. Mem0 extracts facts and relations with the LLM, upserts memory vectors into Qdrant, embeds entity names for graph node merge, and writes relations to Neo4j.
+- Note: the assistant response is not added to memory unless you change the code.
+
 ## Quickstart
 
 ### 1) Create environment
