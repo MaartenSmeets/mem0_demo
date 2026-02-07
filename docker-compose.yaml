@@ -17,10 +17,10 @@ services:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - ./neo4j_data:/data
-      - ./neo4j_logs:/logs
-      - ./neo4j_import:/import
-      - ./neo4j_plugins:/plugins
+      - ./neo4j_data:/data:Z
+      - ./neo4j_logs:/logs:Z
+      - ./neo4j_import:/import:Z
+      - ./neo4j_plugins:/plugins:Z
     environment:
       - NEO4J_AUTH=neo4j/mem0demo123
     restart: always
