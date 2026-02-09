@@ -3,7 +3,7 @@
 A local-first chat UI that uses **Mem0** for long-term memory, **Qdrant** for vector storage, **Neo4j** for graph memory, **Hugging Face embeddings on CPU**, and the **OpenAI Python client** pointed at **Ollama’s OpenAI-compatible API** for generation. The UI is built with **NiceGUI** and provides a separate Mem0 Activity tab that groups retrieved memories, actions, and graph relations by request.
 
 ## What This Does
-- Chat with a local model via Ollama using the Responses API when available; assistant replies are neutral paraphrases of the latest user message.
+- Chat with a local model via Ollama using the Responses API when available; assistant replies are short, kind confirmations that paraphrase the latest user message.
 - Store and retrieve memories with Mem0 + Qdrant.
 - Capture and query relationships with Mem0 Graph + Neo4j.
 - Use a local CPU embedding model (SentenceTransformers).
@@ -87,7 +87,7 @@ The app asks the model for a structured response using a JSON schema via the Res
 ## Code Overview
 - `chat.py`: UI entrypoint.
 - `ui_app.py`: NiceGUI layout, chat handlers, and Mem0 activity UI.
-- `llm.py`: Responses API calls, structured output parsing, and neutral paraphrasing prompts.
+- `llm.py`: Responses API calls, structured output parsing, and kind confirmation/paraphrasing prompts.
 - `clients.py`: OpenAI + Mem0 client construction.
 - `config.py`: Env settings and Mem0 configuration.
 - `mem0_patch.py`: Runtime patch for Mem0 graph extraction behavior.

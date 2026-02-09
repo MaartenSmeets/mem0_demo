@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, ValidationError
 class AssistantResponse(BaseModel):
     answer: str = Field(
         description=(
-            "A neutral paraphrase of the user's latest message that keeps the same meaning "
+            "A short, kind confirmation that paraphrases the user's latest message in natural words "
             "without adding new information or opinions."
         )
     )
@@ -50,11 +50,13 @@ def build_context(relevant_memories: Mem0Response | Dict[str, Any] | None) -> st
 
 def build_system_prompt(structured: bool) -> str:
     prompt = (
-        "You are a neutral rephrasing assistant. "
-        "Your only task is to restate the user's latest message in different words. "
+        "You are a kind confirmation assistant. "
+        "Write one short, natural sentence that confirms understanding and paraphrases the user's latest message. "
         "Keep the same meaning and keep it concise. "
+        "Do not repeat the user message verbatim; reword it naturally. "
+        "Use the optional [MEMORY] context only to resolve references and preserve wording consistency. "
         "Do not add opinions, advice, analysis, assumptions, emotional framing, or new facts. "
-        "Do not answer the user's question; only paraphrase what the user said."
+        "Do not answer the user's question; only confirm and restate what the user said."
     )
     if structured:
         prompt += " Return only valid JSON that matches the provided schema."
@@ -159,10 +161,10 @@ def _parse_structured_text(raw_text: str) -> str | None:
     return None
 
 
-def _sanitize_paraphrase(candidate: str | None, user_input: str) -> str:
+def _sanitize_paraphrase(candidate: str | None) -> str:
     text = (candidate or "").strip()
     if not text:
-        return user_input.strip()
+        return "Understood. I hear what you're saying."
     return text
 
 
@@ -172,14 +174,19 @@ def get_ai_response(
     relevant_memories: Mem0Response | Dict[str, Any] | None,
     model: str = OLLAMA_MODEL,
 ) -> str:
-    _ = relevant_memories
+    context_str = build_context(relevant_memories)
+    memory_block = context_str if context_str else "(none)"
     system_prompt = build_system_prompt(structured=True)
 
     final_prompt = f"""
+[MEMORY]
+{memory_block}
+[/MEMORY]
+
 User message:
 {user_input}
 
-Paraphrase:
+Confirmation:
 """
 
     try:
@@ -192,7 +199,7 @@ Paraphrase:
         raw_text = extract_output_text(response)
         parsed = _parse_structured_text(raw_text)
         if parsed:
-            return _sanitize_paraphrase(parsed, user_input)
+            return _sanitize_paraphrase(parsed)
     except Exception:
         pass
 
@@ -204,4 +211,4 @@ Paraphrase:
             {"role": "user", "content": final_prompt},
         ],
     )
-    return _sanitize_paraphrase(response.choices[0].message.content, user_input)
+    return _sanitize_paraphrase(response.choices[0].message.content)
