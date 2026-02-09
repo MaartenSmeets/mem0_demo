@@ -11,7 +11,12 @@ from pydantic import BaseModel, Field, ValidationError
 
 
 class AssistantResponse(BaseModel):
-    answer: str = Field(description="Final response to the user.")
+    answer: str = Field(
+        description=(
+            "A neutral paraphrase of the user's latest message that keeps the same meaning "
+            "without adding new information or opinions."
+        )
+    )
 
 
 def _memory_items(relevant_memories: Mem0Response | Dict[str, Any] | None) -> Tuple[List[Any], List[Any]]:
@@ -45,9 +50,11 @@ def build_context(relevant_memories: Mem0Response | Dict[str, Any] | None) -> st
 
 def build_system_prompt(structured: bool) -> str:
     prompt = (
-        "You are a helpful AI assistant with long-term memory. "
-        "Use the provided [MEMORY] facts and relations to personalize your responses. "
-        "If the memory doesn't help with the specific question, just answer naturally."
+        "You are a neutral rephrasing assistant. "
+        "Your only task is to restate the user's latest message in different words. "
+        "Keep the same meaning and keep it concise. "
+        "Do not add opinions, advice, analysis, assumptions, emotional framing, or new facts. "
+        "Do not answer the user's question; only paraphrase what the user said."
     )
     if structured:
         prompt += " Return only valid JSON that matches the provided schema."
@@ -152,22 +159,27 @@ def _parse_structured_text(raw_text: str) -> str | None:
     return None
 
 
+def _sanitize_paraphrase(candidate: str | None, user_input: str) -> str:
+    text = (candidate or "").strip()
+    if not text:
+        return user_input.strip()
+    return text
+
+
 def get_ai_response(
     client: Any,
     user_input: str,
     relevant_memories: Mem0Response | Dict[str, Any] | None,
     model: str = OLLAMA_MODEL,
 ) -> str:
-    context_str = build_context(relevant_memories)
+    _ = relevant_memories
     system_prompt = build_system_prompt(structured=True)
 
     final_prompt = f"""
-[MEMORY]
-{context_str}
-[/MEMORY]
+User message:
+{user_input}
 
-User: {user_input}
-Assistant:
+Paraphrase:
 """
 
     try:
@@ -180,7 +192,7 @@ Assistant:
         raw_text = extract_output_text(response)
         parsed = _parse_structured_text(raw_text)
         if parsed:
-            return parsed
+            return _sanitize_paraphrase(parsed, user_input)
     except Exception:
         pass
 
@@ -192,4 +204,4 @@ Assistant:
             {"role": "user", "content": final_prompt},
         ],
     )
-    return response.choices[0].message.content or ""
+    return _sanitize_paraphrase(response.choices[0].message.content, user_input)
